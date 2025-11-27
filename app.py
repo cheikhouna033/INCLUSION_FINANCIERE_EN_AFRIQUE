@@ -7,7 +7,7 @@ from io import BytesIO
 # -------------------------------
 # 🔹 URL du modèle sur GitHub
 # -------------------------------
-MODEL_URL = "https://github.com/cheikhouna033/Inclusion-financi-re-en-Afrique/raw/main/fin_inclusion_model_compressed.pkl"
+MODEL_URL = "https://drive.google.com/file/d/1eOUOQTZLrU-_ZeDsaOB49oi7vSADuu3y/view?usp=sharing"
 
 @st.cache_resource
 def load_model_from_github(url):
