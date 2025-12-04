@@ -5,7 +5,7 @@ import joblib
 import requests
 import os
 
-MODEL_URL = "https://github.com/cheikhouna033/Inclusion-financiere/releases/download/v1.0/fin_inclusion_model.pkl
+MODEL_URL = "https://github.com/cheikhouna033/Inclusion-financiere/releases/download/v1.0/fin_inclusion_model.pkl"
 
 MODEL_PATH = "model.pkl"
 
