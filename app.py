@@ -1,76 +1,66 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
 import joblib
 import requests
-import os
+import io
 
-MODEL_URL = "https://github.com/cheikhouna033/Inclusion-financiere/releases/download/v1.0/fin_inclusion_model.pkl"
+MODEL_URL = "https://github.com/cheikhouna033/INCLUSION_FINANCIERE_EN_AFRIQUE/releases/download/stream/model.pkl"
 
-MODEL_PATH = "model.pkl"
-
-
-# ---------------------------------------------------
-# Fonction pour télécharger automatiquement le modèle
-# ---------------------------------------------------
-def download_model():
-    if not os.path.exists(MODEL_PATH):        
-        st.info("Téléchargement du modèle en cours...")
-        response = requests.get(MODEL_URL)
-        with open(MODEL_PATH, "wb") as f:
-            f.write(response.content)
-        st.success("Modèle téléchargé avec succès !")
-
-
-# ---------------------------------------------------
-# Charger le modèle
-# ---------------------------------------------------
 @st.cache_resource
 def load_model():
-    download_model()
-    return joblib.load(MODEL_PATH)
-
-
-# ---------------------------------------------------
-# Interface Streamlit
-# ---------------------------------------------------
-st.title("Inclusion Financière en Afrique – Prédiction")
-
-st.write("Ce modèle prédit la probabilité d'inclusion financière basée sur vos données.")
+    try:
+        response = requests.get(MODEL_URL)
+        response.raise_for_status()
+        buffer = io.BytesIO(response.content)
+        model = joblib.load(buffer)
+        return model
+    except Exception as e:
+        st.error(f"Erreur lors du chargement du modèle : {e}")
+        return None
 
 model = load_model()
 
-# -----------------------------
-# Formulaire utilisateur
-# -----------------------------
-st.header("Entrer les informations")
+st.title("Prédiction - Inclusion Financière en Afrique")
 
-age = st.number_input("Âge", min_value=18, max_value=100)
-revenu = st.number_input("Revenu mensuel", min_value=0)
-education = st.selectbox("Niveau d'éducation", ["Aucun", "Primaire", "Secondaire", "Supérieur"])
-sexe = st.selectbox("Sexe", ["Homme", "Femme"])
+st.write("Remplissez les champs pour prédire la possession d’un compte bancaire.")
 
-# Encoder
-education_map = {"Aucun": 0, "Primaire": 1, "Secondaire": 2, "Supérieur": 3}
-sexe_map = {"Homme": 0, "Femme": 1}
+country = st.selectbox("Country", ["Kenya","Uganda","Tanzania","Rwanda","Burundi"])
+year = st.number_input("Year", 2000, 2030, 2016)
+location_type = st.selectbox("Location", ["Rural","Urban"])
+cellphone_access = st.selectbox("Cellphone access", ["No","Yes"])
+household_size = st.number_input("Household size", 1, 50, 4)
+age_of_respondent = st.number_input("Age", 10, 120, 30)
+gender_of_respondent = st.selectbox("Gender", ["Male","Female"])
+relationship_with_head = st.selectbox("Relationship with Head", ["Head of Household","Spouse","Child","Other"])
+marital_status = st.selectbox("Marital Status", ["Married","Single","Divorced","Widowed"])
+education_level = st.selectbox("Education level", [
+    "No formal education","Primary education","Secondary education","Tertiary education"
+])
+job_type = st.selectbox("Job type", [
+    "Self employed","Formally employed Government","Farming and Fishing",
+    "Informally employed","Remittance Dependent"
+])
 
-# ---------------------------
-# Prédiction
-# ---------------------------
+input_df = pd.DataFrame([{
+    "country": country,
+    "year": year,
+    "location_type": location_type,
+    "cellphone_access": cellphone_access,
+    "household_size": household_size,
+    "age_of_respondent": age_of_respondent,
+    "gender_of_respondent": gender_of_respondent,
+    "relationship_with_head": relationship_with_head,
+    "marital_status": marital_status,
+    "education_level": education_level,
+    "job_type": job_type
+}])
+
 if st.button("Prédire"):
-    data = np.array([
-        age,
-        revenu,
-        education_map[education],
-        sexe_map[sexe]
-    ]).reshape(1, -1)
-
-    prediction = model.predict(data)
-    proba = model.predict_proba(data)[0][1]
-
-    st.subheader("Résultat")
-
-    if prediction[0] == 1:
-        st.success(f"Inclus financièrement (probabilité = {proba:.2f})")
+    if model is None:
+        st.error("Modèle non chargé.")
     else:
-        st.error(f"Non inclus financièrement (probabilité = {proba:.2f})")
+        pred = model.predict(input_df)[0]
+        if pred == 1:
+            st.success("✔ Oui, cette personne est susceptible d'avoir un compte bancaire")
+        else:
+            st.warning("✖ Non, cette personne est peu susceptible d'avoir un compte bancaire")
